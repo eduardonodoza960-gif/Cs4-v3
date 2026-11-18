@@ -23,11 +23,23 @@ jobs:
         with:
           gradle-version: 7.6.4
 
+      - name: Find project folder (unzips if a .zip was uploaded)
+        shell: bash
+        run: |
+          if [ -z "$(find . -name settings.gradle -not -path './.git/*' | head -1)" ]; then
+            Z=$(find . -name '*.zip' -not -path './.git/*' | head -1)
+            if [ -n "$Z" ]; then unzip -o "$Z" -d _proj; fi
+          fi
+          S=$(find . -name settings.gradle -not -path './.git/*' | head -1)
+          if [ -z "$S" ]; then echo "settings.gradle not found"; exit 1; fi
+          echo "PROJECT_DIR=$(dirname "$S")" >> "$GITHUB_ENV"
+
       - name: Build
+        working-directory: ${{ env.PROJECT_DIR }}
         run: gradle build --no-daemon
 
       - name: Upload jar
         uses: actions/upload-artifact@v4
         with:
           name: cs-reliquia
-          path: build/libs/*.jar
+          path: ${{ env.PROJECT_DIR }}/build/libs/*.jar
